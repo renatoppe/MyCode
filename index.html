@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coder Studio V2</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#16181d">
+<style>
+:root{
+  --bg:#101217;
+  --panel:#171a21;
+  --panel2:#1d212b;
+  --line:#2d3340;
+  --text:#eef3fb;
+  --muted:#a6b1c5;
+  --accent:#63a7ff;
+  --accent2:#8ef0bf;
+  --warn:#ffd479;
+  --danger:#ff8e8e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+header{
+  padding:14px 18px;
+  border-bottom:1px solid var(--line);
+  background:var(--panel);
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+header h1{margin:0;font-size:22px}
+header .sub{font-size:12px;color:var(--muted);margin-top:4px}
+.statusbar{display:flex;gap:10px;flex-wrap:wrap}
+.pill{
+  padding:7px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--panel2);
+  font-size:12px;
+  color:var(--muted);
+}
+.app{
+  display:grid;
+  grid-template-columns:360px 1fr;
+  min-height:calc(100vh - 70px);
+}
+.sidebar{
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  padding:14px;
+  overflow:auto;
+}
+.main{
+  padding:14px;
+  overflow:auto;
+}
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.card h2,.card h3{margin:0 0 10px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+input,select,textarea{
+  width:100%;
+  background:#0f131a;
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+  font:inherit;
+}
+textarea{min-height:120px;resize:vertical}
+button{
+  background:var(--accent);
+  color:#08111e;
+  border:none;
+  padding:10px 12px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+button.secondary{background:#2a3241;color:var(--text)}
+button.ghost{background:#141922;color:var(--muted);border:1px solid var(--line)}
+button.warn{background:var(--warn);color:#1f1804}
+button.danger{background:var(--danger);color:#210707}
+button:disabled{opacity:.55;cursor:not-allowed}
+.btnrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.btnrow2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{
+  padding:9px 12px;
+  border-radius:10px;
+  background:#151922;
+  border:1px solid var(--line);
+  cursor:pointer;
+  color:var(--muted);
+}
+.tab.active{background:#243149;color:var(--text)}
+.panel{display:none}
+.panel.active{display:block}
+pre{
+  margin:0;
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#0b0f15;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:12px;
+  overflow:auto;
+  color:#dce8fb;
+  min-height:120px;
+}
+.list{display:grid;gap:8px}
+.item{
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#11151d;
+}
+.small{font-size:12px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:8px 10px}
+.kv div:nth-child(odd){color:var(--muted);font-size:13px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.code-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:1000px){.app{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--line)}}
+@media(max-width:700px){.grid2,.btnrow,.btnrow2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Coder Studio V2</h1>
+    <div class="sub">Single-page frontend for coder generate, apply, backup, revert and prompt-driven code changes.</div>
+  </div>
+  <div class="statusbar">
+    <div class="pill" id="brainStatus">Brain: not tested</div>
+    <div class="pill" id="endpointStatus">Endpoint: /coder/generate</div>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="card">
+      <h3>Brain Connection</h3>
+      <label>Brain URL</label>
+      <input id="brainUrl" placeholder="http://100.x.x.x:8000" />
+
+      <label>API Key</label>
+      <input id="apiKey" type="password" placeholder="X-API-Key" />
+
+      <label>Generate Endpoint</label>
+      <select id="generateEndpoint">
+        <option value="/coder/generate">/coder/generate</option>
+        <option value="/chat">/chat</option>
+      </select>
+
+      <div class="btnrow2">
+        <button id="testBtn">Test Connection</button>
+        <button id="saveSettingsBtn" class="secondary">Save Settings</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Project Setup</h3>
+      <label>Project</label>
+      <select id="project">
+        <option value="Brain">Brain</option>
+        <option value="SchoolWS">SchoolWS</option>
+        <option value="Teacher Tools">Teacher Tools</option>
+        <option value="MyHub">MyHub</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label>Mode</label>
+      <select id="mode">
+        <option value="create">create</option>
+        <option value="edit">edit</option>
+      </select>
+
+      <label>Artifact Type</label>
+      <select id="artifactType">
+        <option value="full_file">full_file</option>
+        <option value="component">component</option>
+        <option value="patch">patch</option>
+        <option value="api_route">api_route</option>
+        <option value="html_page">html_page</option>
+      </select>
+
+      <label>Language</label>
+      <select id="language">
+        <option value="html">html</option>
+        <option value="javascript">javascript</option>
+        <option value="python">python</option>
+        <option value="css">css</option>
+        <option value="json">json</option>
+      </select>
+
+      <label>Target Path</label>
+      <input id="targetPath" placeholder="app/static/coder-studio/index.html" />
+
+      <label>Apply Only Files (comma separated)</label>
+      <input id="applyOnly" placeholder="templates/teacher.html, static/app.js" />
+
+      <label><input id="previewOnly" type="checkbox" checked style="width:auto;margin-right:8px;">Preview only</label>
+    </div>
+
+    <div class="card">
+      <h3>Backups</h3>
+      <div class="btnrow2">
+        <button id="loadBackupsBtn" class="secondary">Load Backups</button>
+        <button id="clearHistoryBtn" class="ghost">Clear Local</button>
+      </div>
+      <div class="small" style="margin-top:10px">Uses GET /coder/backups and POST /coder/revert when available.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="card">
+      <h2>Main Prompt</h2>
+      <label>Describe exactly what the coder should create or change</label>
+      <textarea id="mainPrompt" placeholder="Example: in teacher.html move config buttons into a top menu, keep the chat layout unchanged, create backup before applying, return full updated file."></textarea>
+      <div class="btnrow">
+        <button id="generateBtn">Generate</button>
+        <button id="applyBtn" class="warn">Apply</button>
+        <button id="saveOnlyBtn" class="secondary">Save Only</button>
+      </div>
+      <div class="btnrow2">
+        <button id="buildChangePromptBtn" class="ghost">Build Structured Prompt</button>
+        <button id="copyPromptBtn" class="ghost">Copy Prompt</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="resultPanel">Result</div>
+      <div class="tab" data-tab="filesPanel">Files</div>
+      <div class="tab" data-tab="backupsPanel">Backups</div>
+      <div class="tab" data-tab="historyPanel">History</div>
+      <div class="tab" data-tab="rawPanel">Raw JSON</div>
+    </div>
+
+    <section id="resultPanel" class="panel active">
+      <div class="grid2">
+        <div class="card">
+          <h3>Summary</h3>
+          <pre id="summaryBox">No result yet.</pre>
+        </div>
+        <div class="card">
+          <h3>Metadata</h3>
+          <div id="metaBox" class="kv"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Code Preview</h3>
+        <pre id="previewBox">Preview will appear here.</pre>
+        <div class="code-actions">
+          <button id="copyPreviewBtn" class="ghost">Copy Preview</button>
+          <button id="downloadPreviewBtn" class="ghost">Download Preview</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="filesPanel" class="panel">
+      <div class="grid2">
+        <div class="card">
+          <h3>Saved Files</h3>
+          <div id="savedFilesList" class="list"></div>
+        </div>
+        <div class="card">
+          <h3>Validation Errors</h3>
+          <div id="validationList" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="backupsPanel" class="panel">
+      <div class="card">
+        <h3>Backup Browser</h3>
+        <div id="backupsList" class="list"></div>
+      </div>
+    </section>
+
+    <section id="historyPanel" class="panel">
+      <div class="card">
+        <h3>Local History</h3>
+        <div id="historyList" class="list"></div>
+      </div>
+    </section>
+
+    <section id="rawPanel" class="panel">
+      <div class="card">
+        <h3>Raw JSON</h3>
+        <pre id="rawBox">{}</pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const STORAGE_KEY = 'coder_studio_v2_settings';
+const HISTORY_KEY = 'coder_studio_v2_history';
+
+const els = {
+  brainUrl: document.getElementById('brainUrl'),
+  apiKey: document.getElementById('apiKey'),
+  generateEndpoint: document.getElementById('generateEndpoint'),
+  brainStatus: document.getElementById('brainStatus'),
+  endpointStatus: document.getElementById('endpointStatus'),
+  project: document.getElementById('project'),
+  mode: document.getElementById('mode'),
+  artifactType: document.getElementById('artifactType'),
+  language: document.getElementById('language'),
+  targetPath: document.getElementById('targetPath'),
+  applyOnly: document.getElementById('applyOnly'),
+  previewOnly: document.getElementById('previewOnly'),
+  mainPrompt: document.getElementById('mainPrompt'),
+  summaryBox: document.getElementById('summaryBox'),
+  previewBox: document.getElementById('previewBox'),
+  metaBox: document.getElementById('metaBox'),
+  savedFilesList: document.getElementById('savedFilesList'),
+  validationList: document.getElementById('validationList'),
+  backupsList: document.getElementById('backupsList'),
+  historyList: document.getElementById('historyList'),
+  rawBox: document.getElementById('rawBox'),
+  testBtn: document.getElementById('testBtn'),
+  saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+  generateBtn: document.getElementById('generateBtn'),
+  applyBtn: document.getElementById('applyBtn'),
+  saveOnlyBtn: document.getElementById('saveOnlyBtn'),
+  buildChangePromptBtn: document.getElementById('buildChangePromptBtn'),
+  copyPromptBtn: document.getElementById('copyPromptBtn'),
+  loadBackupsBtn: document.getElementById('loadBackupsBtn'),
+  clearHistoryBtn: document.getElementById('clearHistoryBtn'),
+  copyPreviewBtn: document.getElementById('copyPreviewBtn'),
+  downloadPreviewBtn: document.getElementById('downloadPreviewBtn')
+};
+
+function saveSettings(){
+  const settings = {
+    brainUrl: els.brainUrl.value.trim(),
+    apiKey: els.apiKey.value,
+    generateEndpoint: els.generateEndpoint.value,
+    project: els.project.value,
+    mode: els.mode.value,
+    artifactType: els.artifactType.value,
+    language: els.language.value,
+    targetPath: els.targetPath.value,
+    applyOnly: els.applyOnly.value,
+    previewOnly: els.previewOnly.checked
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function loadSettings(){
+  try{
+    const settings = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    Object.keys(settings).forEach(key => {
+      if(key in els){
+        if(key === 'previewOnly') els[key].checked = !!settings[key];
+        else els[key].value = settings[key];
+      }
+    });
+  }catch(e){}
+  updateEndpointLabel();
+}
+
+function updateEndpointLabel(){
+  els.endpointStatus.textContent = 'Endpoint: ' + els.generateEndpoint.value;
+}
+
+function setBrainStatus(text){
+  els.brainStatus.textContent = text;
+}
+
+function getHeaders(){
+  const headers = {'Content-Type':'application/json'};
+  if(els.apiKey.value.trim()) headers['X-API-Key'] = els.apiKey.value.trim();
+  return headers;
+}
+
+function normalizeUrl(base, path){
+  const a = base.replace(/\/$/, '');
+  const b = path.startsWith('/') ? path : '/' + path;
+  return a + b;
+}
+
+function renderMeta(meta){
+  const rows = [
+    ['project', meta.project || '-'],
+    ['mode', meta.mode || '-'],
+    ['artifact_type', meta.artifact_type || '-'],
+    ['language', meta.language || '-'],
+    ['target_path', meta.target_path || '-'],
+    ['status', meta.status || '-']
+  ];
+  els.metaBox.innerHTML = rows.map(r => '<div>' + escapeHtml(r[0]) + '</div><div>' + escapeHtml(String(r[1])) + '</div>').join('');
+}
+
+function renderList(el, items, emptyText, withRestore){
+  if(!Array.isArray(items) || !items.length){
+    el.innerHTML = '<div class="item small">' + escapeHtml(emptyText) + '</div>';
+    return;
+  }
+  el.innerHTML = '';
+  items.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'item';
+    const text = typeof item === 'string' ? item : JSON.stringify(item, null, 2);
+    div.innerHTML = '<pre style="min-height:auto">' + escapeHtml(text) + '</pre>';
+    if(withRestore){
+      const btn = document.createElement('button');
+      btn.className = 'secondary';
+      btn.textContent = 'Restore this backup';
+      btn.addEventListener('click', () => revertBackup(item, index));
+      div.appendChild(btn);
+    }
+    el.appendChild(div);
+  });
+}
+
+function escapeHtml(text){
+  return String(text ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+function buildStructuredPrompt(){
+  const target = els.targetPath.value.trim() || '[define target path]';
+  const project = els.project.value;
+  const mode = els.mode.value;
+  const applyOnly = els.applyOnly.value.trim();
+  const lines = [
+    'Apply the following code request safely.',
+    'Project: ' + project,
+    'Mode: ' + mode,
+    'Target path: ' + target,
+    'Artifact type: ' + els.artifactType.value,
+    'Language: ' + els.language.value,
+    'Preview only: ' + (els.previewOnly.checked ? 'true' : 'false')
+  ];
+  if(applyOnly) lines.push('Apply only: ' + applyOnly);
+  lines.push('', 'Requested change:', els.mainPrompt.value.trim(), '', 'Rules:', '- Keep unrelated code unchanged.', '- Return summary, preview, saved_files, backup_files and validation errors.', '- Prefer full updated file when editing UI files.');
+  els.mainPrompt.value = lines.join('\n');
+}
+
+function buildGeneratePayload(action){
+  const payload = {
+    project: els.project.value,
+    mode: els.mode.value,
+    artifact_type: els.artifactType.value,
+    language: els.language.value,
+    target_path: els.targetPath.value.trim(),
+    prompt: els.mainPrompt.value.trim(),
+    preview_only: els.previewOnly.checked,
+    action: action
+  };
+  const applyOnly = els.applyOnly.value.trim();
+  if(applyOnly){
+    payload.apply_only = applyOnly.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  return payload;
+}
+
+function buildChatPayload(action){
+  const text = [
+    'You are the coder capability.',
+    'Action: ' + action,
+    'Project: ' + els.project.value,
+    'Mode: ' + els.mode.value,
+    'Artifact type: ' + els.artifactType.value,
+    'Language: ' + els.language.value,
+    'Target path: ' + (els.targetPath.value.trim() || '-'),
+    'Preview only: ' + (els.previewOnly.checked ? 'true' : 'false'),
+    'Apply only: ' + (els.applyOnly.value.trim() || '-'),
+    '',
+    'Prompt:',
+    els.mainPrompt.value.trim(),
+    '',
+    'Return summary, preview, saved files, backup files and validation errors.'
+  ].join('\n');
+  return {message:text};
+}
+
+function extractResult(json){
+  const meta = json?.meta || {};
+  const coder = meta?.coder_plan || json?.coder_plan || {};
+  const result = coder?.result || json?.result || {};
+  return {
+    summary: result.summary || coder.summary || json.reply || 'No summary returned.',
+    preview: result.content || result.preview || result.generated_content || coder.content || json.reply || '',
+    saved_files: result.saved_files || coder.saved_files || json.saved_files || [],
+    backup_files: result.backup_files || coder.backup_files || json.backup_files || [],
+    validation_errors: result.validation_errors || coder.validation_errors || json.validation_errors || [],
+    meta: {
+      project: result.project || coder.project || els.project.value,
+      mode: els.mode.value,
+      artifact_type: result.artifact_type || coder.artifact_type || els.artifactType.value,
+      language: result.language || coder.language || els.language.value,
+      target_path: result.target_path || coder.target_path || els.targetPath.value,
+      status: json?.ok === false ? 'error' : 'ok'
+    },
+    raw: json
+  };
+}
+
+function saveHistoryEntry(entry){
+  const current = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  current.unshift(entry);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(current.slice(0, 20)));
+  renderHistory();
+}
+
+function renderHistory(){
+  const items = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  renderList(els.historyList, items, 'No local history yet.', false);
+}
+
+async function apiCall(path, method, body){
+  const url = normalizeUrl(els.brainUrl.value.trim(), path);
+  const options = {method, headers:getHeaders()};
+  if(body) options.body = JSON.stringify(body);
+  const response = await fetch(url, options);
+  const text = await response.text();
+  let json;
+  try{ json = JSON.parse(text); } catch(e){ json = {ok:response.ok, raw_text:text}; }
+  if(!response.ok) throw new Error(JSON.stringify(json));
+  return json;
+}
+
+async function testConnection(){
+  if(!els.brainUrl.value.trim()){
+    alert('Set Brain URL first.');
+    return;
+  }
+  try{
+    setBrainStatus('Brain: testing...');
+    const json = await apiCall('/health', 'GET');
+    setBrainStatus(json?.ok ? 'Brain: online' : 'Brain: health responded without ok');
+  }catch(err){
+    setBrainStatus('Brain: connection failed');
+  }
+}
+
+async function runCoder(action){
+  if(!els.brainUrl.value.trim()){
+    alert('Set Brain URL first.');
+    return;
+  }
+  if(!els.mainPrompt.value.trim()){
+    alert('Write the main prompt first.');
+    return;
+  }
+  try{
+    disableMainButtons(true);
+    els.summaryBox.textContent = 'Sending request...';
+    const endpoint = els.generateEndpoint.value;
+    const payload = endpoint === '/chat' ? buildChatPayload(action) : buildGeneratePayload(action);
+    const json = await apiCall(endpoint, 'POST', payload);
+    const data = extractResult(json);
+    els.summaryBox.textContent = data.summary;
+    els.previewBox.textContent = data.preview || 'No preview returned.';
+    els.rawBox.textContent = JSON.stringify(json, null, 2);
+    renderMeta(data.meta);
+    renderList(els.savedFilesList, data.saved_files, 'No saved files.', false);
+    renderList(els.validationList, data.validation_errors, 'No validation errors.', false);
+    renderList(els.backupsList, data.backup_files, 'No backup files returned.', true);
+    saveHistoryEntry({
+      ts: new Date().toLocaleString(),
+      action,
+      project: els.project.value,
+      target_path: els.targetPath.value.trim(),
+      prompt: els.mainPrompt.value.trim().slice(0, 500)
+    });
+  }catch(err){
+    els.summaryBox.textContent = 'Request failed.';
+    els.rawBox.textContent = String(err);
+  }finally{
+    disableMainButtons(false);
+  }
+}
+
+function disableMainButtons(disabled){
+  els.generateBtn.disabled = disabled;
+  els.applyBtn.disabled = disabled;
+  els.saveOnlyBtn.disabled = disabled;
+}
+
+async function loadBackups(){
+  if(!els.brainUrl.value.trim()){
+    alert('Set Brain URL first.');
+    return;
+  }
+  try{
+    const json = await apiCall('/coder/backups', 'GET');
+    const backups = json?.items || json?.backups || json || [];
+    renderList(els.backupsList, Array.isArray(backups) ? backups : [backups], 'No backups found.', true);
+  }catch(err){
+    els.backupsList.innerHTML = '<div class="item small">Failed to load backups.</div>';
+  }
+}
+
+async function revertBackup(item, index){
+  if(!els.brainUrl.value.trim()) return;
+  const confirmed = confirm('Restore this backup?');
+  if(!confirmed) return;
+  try{
+    const backup_id = item?.backup_id || item?.id || item?.path || item;
+    const payload = {backup_id};
+    const json = await apiCall('/coder/revert', 'POST', payload);
+    alert('Backup restored.');
+    els.rawBox.textContent = JSON.stringify(json, null, 2);
+  }catch(err){
+    alert('Failed to restore backup.');
+  }
+}
+
+function copyPrompt(){
+  navigator.clipboard.writeText(els.mainPrompt.value || '');
+}
+
+function copyPreview(){
+  navigator.clipboard.writeText(els.previewBox.textContent || '');
+}
+
+function downloadPreview(){
+  const content = els.previewBox.textContent || '';
+  const fileName = (els.targetPath.value.trim().split('/').pop() || 'coder-preview.txt');
+  const blob = new Blob([content], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function clearHistory(){
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+els.saveSettingsBtn.addEventListener('click', () => { saveSettings(); alert('Settings saved.'); });
+els.generateEndpoint.addEventListener('change', updateEndpointLabel);
+els.testBtn.addEventListener('click', testConnection);
+els.generateBtn.addEventListener('click', () => runCoder('generate'));
+els.applyBtn.addEventListener('click', () => runCoder('apply'));
+els.saveOnlyBtn.addEventListener('click', () => runCoder('save_only'));
+els.buildChangePromptBtn.addEventListener('click', buildStructuredPrompt);
+els.copyPromptBtn.addEventListener('click', copyPrompt);
+els.loadBackupsBtn.addEventListener('click', loadBackups);
+els.clearHistoryBtn.addEventListener('click', clearHistory);
+els.copyPreviewBtn.addEventListener('click', copyPreview);
+els.downloadPreviewBtn.addEventListener('click', downloadPreview);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+loadSettings();
+renderMeta({});
+renderHistory();
+renderList(els.savedFilesList, [], 'No saved files.', false);
+renderList(els.validationList, [], 'No validation errors.', false);
+renderList(els.backupsList, [], 'No backups loaded.', true);
+</script>
+</body>
+</html>
