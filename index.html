@@ -420,7 +420,7 @@ function buildGeneratePayload(action){
     target_path: els.targetPath.value.trim(),
     preview_only: els.previewOnly.checked,
     action,
-    prompt: buildConversationPrompt()
+    message: buildConversationPrompt()
   };
   if(els.letBrainChooseLanguages.checked){
     payload.languages = [];
@@ -509,7 +509,9 @@ async function testConnection(){
   if(!els.brainUrl.value.trim()) return alert('Set Brain URL first.');
   try{
     setBrainStatus('Brain: testing...');
-    const json = await apiCall('/health','GET');
+    const json = await apiCall(els.generateEndpoint.value, 'POST', {
+      message: 'connection test'
+    });
     setBrainStatus(json?.ok ? 'Brain: online' : 'Brain: health responded without ok');
   }catch(err){ setBrainStatus('Brain: connection failed'); }
 }
